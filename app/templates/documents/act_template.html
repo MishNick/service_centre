@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Акт выполненных работ №{{ act_number }}</title>
+    <style>
+        body {
+            font-family: 'DejaVu Sans', Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #555;
+        }
+        .info-block {
+            margin-bottom: 20px;
+        }
+        .info-row {
+            margin-bottom: 8px;
+        }
+        .label {
+            font-weight: bold;
+            width: 150px;
+            display: inline-block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f0f0f0;
+        }
+        .signatures {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature {
+            width: 200px;
+        }
+        .signature-line {
+            border-top: 1px solid #333;
+            margin-top: 30px;
+            padding-top: 5px;
+            text-align: center;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">АКТ ВЫПОЛНЕННЫХ РАБОТ №{{ act_number }}</div>
+            <div class="subtitle">от {{ date }}</div>
+        </div>
+
+        <div class="info-block">
+            <div class="info-row"><span class="label">Клиент:</span> {{ client_name }}</div>
+            <div class="info-row"><span class="label">Телефон:</span> {{ client_phone }}</div>
+            <div class="info-row"><span class="label">Адрес:</span> {{ client_address }}</div>
+        </div>
+
+        <div class="info-block">
+            <div class="info-row"><span class="label">Оборудование:</span> {{ equipment_type }} {{ equipment_model }}</div>
+            <div class="info-row"><span class="label">Серийный номер:</span> {{ serial_number }}</div>
+        </div>
+
+        <div class="info-block">
+            <div class="info-row"><span class="label">Заявка №:</span> {{ task_id }}</div>
+            <div class="info-row"><span class="label">Инженер:</span> {{ engineer_name }}</div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>№</th>
+                    <th>Наименование работ</th>
+                    <th>Кол-во</th>
+                    <th>Стоимость, руб.</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>{{ work_description }}</td>
+                    <td>1</td>
+                    <td>{{ price }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="info-block">
+            <div class="info-row"><span class="label">ИТОГО к оплате:</span> {{ price }} руб.</div>
+        </div>
+
+        <div class="signatures">
+            <div class="signature">
+                <div>Мастер:</div>
+                <div class="signature-line">{{ engineer_name }}</div>
+            </div>
+            <div class="signature">
+                <div>Клиент:</div>
+                <div class="signature-line">__________________</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Акт сформирован автоматически в системе Service Center
+        </div>
+    </div>
+</body>
+</html>

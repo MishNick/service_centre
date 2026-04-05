@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Заявки на запчасти{% endblock %}
+
+{% block menu %}
+    <span class="text-gray-600">Кладовщик: {{ user.name }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow rounded-lg p-6">
+    <h1 class="text-2xl font-bold mb-6">Заявки на запчасти</h1>
+
+    <!-- Ожидающие заявки -->
+    <h2 class="text-lg font-semibold mb-3">Новые заявки</h2>
+    <div class="space-y-4 mb-8">
+        {% for request in pending_requests %}
+        <div class="border rounded p-4 bg-yellow-50">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="font-medium">{{ request.part_name }} ({{ request.part_quantity }} шт.)</p>
+                    <p class="text-sm text-gray-600">Задача #{{ request.task_id }}</p>
+                    <p class="text-sm text-gray-600">Инженер: {{ request.engineer.name }}</p>
+                    <p class="text-sm text-gray-500">Создана: {{ request.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="processRequest({{ request.id }}, 'approve')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
+                        Выдать
+                    </button>
+                    <button onclick="processRequest({{ request.id }}, 'reject')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">
+                        Отказать
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-gray-500 py-4">Нет новых заявок</p>
+        {% endfor %}
+    </div>
+
+    <!-- История заявок -->
+    <h2 class="text-lg font-semibold mb-3">История</h2>
+    <div class="space-y-2">
+        {% for request in history %}
+        <div class="border rounded p-3 {% if request.status == 'approved' %}bg-green-50{% else %}bg-red-50{% endif %}">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="font-medium">{{ request.part_name }} ({{ request.part_quantity }} шт.)</p>
+                    <p class="text-sm text-gray-600">Задача #{{ request.task_id }} • Инженер: {{ request.engineer.name }}</p>
+                    {% if request.storekeeper_comment %}
+                    <p class="text-sm text-gray-500">Комментарий: {{ request.storekeeper_comment }}</p>
+                    {% endif %}
+                </div>
+                <span class="px-2 py-1 text-xs rounded-full
+                    {% if request.status == 'approved' %}bg-green-100 text-green-800
+                    {% else %}bg-red-100 text-red-800
+                    {% endif %}">
+                    {{ request.status }}
+                </span>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-gray-500 py-4">История пуста</p>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function processRequest(requestId, action) {
+        let comment = '';
+        if (action === 'reject') {
+            comment = prompt('Укажите причину отказа:');
+            if (comment === null) return; // Отмена
+        }
+
+        fetch(`/api/parts/${requestId}?action=${action}&comment=${encodeURIComponent(comment || '')}`, {
+            method: 'PATCH'
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('Заявка обработана');
+            window.location.reload();
+        })
+        .catch(error => {
+            alert('Ошибка при обработке');
+        });
+    }
+</script>
+{% endblock %}

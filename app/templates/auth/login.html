@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} | Сервисный центр</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-md w-96">
+            <h1 class="text-2xl font-bold mb-2 text-center">Сервисный центр</h1>
+            <p class="text-gray-600 mb-6 text-center">Вход по телефону</p>
+
+            <div id="error-message" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 hidden"></div>
+
+            <form id="login-form" onsubmit="sendCode(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="phone">
+                        Номер телефона
+                    </label>
+                    <input
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        id="phone"
+                        type="tel"
+                        placeholder="+7 (999) 123-45-67"
+                        value="+79991234567"
+                        required
+                    >
+                    <p class="text-gray-500 text-xs mt-1">Формат: +79991234567</p>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <button
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+                        type="submit"
+                        id="submit-btn"
+                    >
+                        Получить код
+                    </button>
+                </div>
+            </form>
+
+            <p class="text-center text-gray-500 text-xs mt-6">
+                MVP версия • Для теста можно использовать любой номер
+            </p>
+        </div>
+    </div>
+
+    <script>
+        async function sendCode(event) {
+            event.preventDefault();
+
+            const phone = document.getElementById('phone').value;
+            const submitBtn = document.getElementById('submit-btn');
+            const errorDiv = document.getElementById('error-message');
+
+            // Простейшая валидация
+            if (!phone.match(/^\+7\d{10}$/)) {
+                showError('Неверный формат телефона. Используйте +7 и 10 цифр');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Отправка...';
+            errorDiv.classList.add('hidden');
+
+            try {
+                const response = await fetch('/auth/request-code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ phone: phone })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Переходим на страницу ввода кода
+                    window.location.href = `/auth/verify?phone=${encodeURIComponent(phone)}`;
+                } else {
+                    showError(data.detail || 'Ошибка при отправке кода');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Получить код';
+                }
+            } catch (error) {
+                showError('Ошибка соединения с сервером');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Получить код';
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

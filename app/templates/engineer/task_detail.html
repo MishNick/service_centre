@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Задача #{{ task.id }}{% endblock %}
+
+{% block menu %}
+    <span class="text-gray-600">Инженер: {{ user.name }}</span>
+    <a href="/engineer/dashboard" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm">
+        ← К списку задач
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow rounded-lg p-6">
+    <div class="flex justify-between items-start mb-6">
+        <h1 class="text-2xl font-bold">Задача #{{ task.id }}</h1>
+        <span class="px-3 py-1 rounded-full text-sm
+            {% if task.status == 'assigned' %}bg-yellow-100 text-yellow-800
+            {% elif task.status == 'in_progress' %}bg-blue-100 text-blue-800
+            {% elif task.status == 'waiting_for_part' %}bg-purple-100 text-purple-800
+            {% elif task.status == 'completed' %}bg-green-100 text-green-800
+            {% endif %}">
+            {{ task.status }}
+        </span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <h2 class="text-lg font-semibold mb-3">Информация о клиенте</h2>
+            <div class="bg-gray-50 p-4 rounded">
+                <p><span class="font-medium">Название:</span> {{ task.client.name }}</p>
+                {% if task.client.company_name %}
+                <p><span class="font-medium">Компания:</span> {{ task.client.company_name }}</p>
+                {% endif %}
+                <p><span class="font-medium">Телефон:</span> {{ task.client.phone or 'не указан' }}</p>
+                <p><span class="font-medium">Адрес:</span> {{ task.client.address or 'не указан' }}</p>
+            </div>
+        </div>
+
+        <div>
+            <h2 class="text-lg font-semibold mb-3">Оборудование</h2>
+            <div class="bg-gray-50 p-4 rounded">
+                <p><span class="font-medium">Тип:</span> {{ task.equipment_type }}</p>
+                <p><span class="font-medium">Модель:</span> {{ task.equipment_model or 'не указана' }}</p>
+                <p><span class="font-medium">Серийный номер:</span> {{ task.serial_number or 'не указан' }}</p>
+                <p><span class="font-medium">Описание проблемы:</span></p>
+                <p class="mt-2 whitespace-pre-wrap">{{ task.description }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== БЛОК КНОПОК ДЛЯ ИНЖЕНЕРА ========== -->
+    <div class="mt-6">
+        <h2 class="text-lg font-semibold mb-3">Управление задачей</h2>
+        <div class="bg-gray-50 p-4 rounded flex flex-wrap gap-2">
+
+            <!-- Кнопка: Начать работу (только если статус 'assigned') -->
+            {% if task.status == 'assigned' %}
+                <button onclick="updateStatus('in_progress')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    🚀 Начать работу
+                </button>
+            {% endif %}
+
+            <!-- Кнопки для статусов 'in_progress' или 'waiting_for_part' -->
+            {% if task.status == 'in_progress' or task.status == 'waiting_for_part' %}
+                <button onclick="showPartRequest()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                    🔧 Запросить запчасть
+                </button>
+
+                {% if task.status != 'waiting_for_part' %}
+                <button onclick="updateStatus('waiting_for_part')" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded">
+                    ⏳ Ожидание детали
+                </button>
+                {% endif %}
+
+                <button onclick="updateStatus('completed')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                    ✅ Завершить
+                </button>
+            {% endif %}
+
+            <!-- Кнопка для генерации акта (только если задача выполнена) -->
+            {% if task.status == 'completed' %}
+                <a href="/api/tasks/{{ task.id }}/generate-act"
+                   target="_blank"
+                   class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-block">
+                    📄 Сформировать акт
+                </a>
+            {% endif %}
+
+            <!-- Если задача уже завершена -->
+            {% if task.status == 'completed' %}
+                <p class="text-green-600 font-medium">Задача выполнена</p>
+            {% endif %}
+        </div>
+    </div>
+    <!-- ========== КОНЕЦ БЛОКА КНОПОК ========== -->
+
+    <!-- Заявки на запчасти -->
+    {% if part_requests %}
+    <div class="mt-6">
+        <h2 class="text-lg font-semibold mb-3">Заявки на запчасти</h2>
+        <div class="space-y-2">
+            {% for request in part_requests %}
+            <div class="bg-gray-50 p-3 rounded flex justify-between items-center">
+                <div>
+                    <p class="font-medium">{{ request.part_name }} ({{ request.part_quantity }} шт.)</p>
+                    <p class="text-sm text-gray-600">Создана: {{ request.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                    {% if request.storekeeper_comment %}
+                    <p class="text-sm text-gray-500">Комментарий: {{ request.storekeeper_comment }}</p>
+                    {% endif %}
+                </div>
+                <span class="px-2 py-1 text-xs rounded-full
+                    {% if request.status == 'pending' %}bg-yellow-100 text-yellow-800
+                    {% elif request.status == 'approved' %}bg-green-100 text-green-800
+                    {% elif request.status == 'rejected' %}bg-red-100 text-red-800
+                    {% endif %}">
+                    {{ request.status }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно для запроса запчасти -->
+<div id="partModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h3 class="text-lg font-semibold mb-4">Запрос запчасти</h3>
+        <form id="partForm" onsubmit="submitPartRequest(event)">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Название детали</label>
+                <input type="text" id="partName" required class="w-full border rounded px-3 py-2" placeholder="Например: картридж HP 1018">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Количество</label>
+                <input type="number" id="partQuantity" value="1" min="1" required class="w-full border rounded px-3 py-2">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closePartModal()" class="px-4 py-2 border rounded hover:bg-gray-100">Отмена</button>
+                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">Отправить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Функция для обновления статуса задачи
+    function updateStatus(status) {
+        if (status === 'completed' && !confirm('Вы уверены, что хотите завершить задачу?')) {
+            return;
+        }
+
+        fetch(`/api/tasks/{{ task.id }}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: status })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw new Error(err.detail || 'Ошибка сервера') });
+            }
+            return response.json();
+        })
+        .then(data => {
+            alert('Статус обновлен!');
+            window.location.reload();
+        })
+        .catch(error => {
+            alert('Ошибка: ' + error.message);
+        });
+    }
+
+    // Функция для показа модального окна запроса запчасти
+    function showPartRequest() {
+        document.getElementById('partModal').classList.remove('hidden');
+        document.getElementById('partModal').classList.add('flex');
+    }
+
+    // Функция для закрытия модального окна
+    function closePartModal() {
+        document.getElementById('partModal').classList.add('hidden');
+        document.getElementById('partModal').classList.remove('flex');
+    }
+
+    // Функция для отправки запроса запчасти
+    function submitPartRequest(event) {
+        event.preventDefault();
+
+        const partName = document.getElementById('partName').value;
+        const quantity = document.getElementById('partQuantity').value;
+
+        fetch(`/api/tasks/{{ task.id }}/parts`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                part_name: partName,
+                part_quantity: parseInt(quantity)
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw new Error(err.detail || 'Ошибка сервера') });
+            }
+            return response.json();
+        })
+        .then(data => {
+            alert('Запрос на запчасть отправлен!');
+            closePartModal();
+            window.location.reload();
+        })
+        .catch(error => {
+            alert('Ошибка: ' + error.message);
+        });
+    }
+</script>
+{% endblock %}

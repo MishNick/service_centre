@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Мои задачи{% endblock %}
+
+{% block menu %}
+    <span class="text-gray-600">Инженер: {{ user.name }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow rounded-lg p-6">
+    <h1 class="text-2xl font-bold mb-6">Мои задачи</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-yellow-50 p-4 rounded border border-yellow-200">
+            <h3 class="font-semibold text-yellow-800">Новые</h3>
+            <p class="text-2xl">{{ tasks|selectattr('status', 'equalto', 'assigned')|list|length }}</p>
+        </div>
+        <div class="bg-blue-50 p-4 rounded border border-blue-200">
+            <h3 class="font-semibold text-blue-800">В работе</h3>
+            <p class="text-2xl">{{ tasks|selectattr('status', 'equalto', 'in_progress')|list|length }}</p>
+        </div>
+        <div class="bg-purple-50 p-4 rounded border border-purple-200">
+            <h3 class="font-semibold text-purple-800">Ждут детали</h3>
+            <p class="text-2xl">{{ tasks|selectattr('status', 'equalto', 'waiting_for_part')|list|length }}</p>
+        </div>
+    </div>
+
+    <div class="space-y-4">
+        {% for task in tasks %}
+        <div class="border rounded p-4 hover:shadow transition cursor-pointer" onclick="window.location.href='/engineer/tasks/{{ task.id }}'">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="font-semibold">{{ task.client.name }}</h3>
+                    <p class="text-sm text-gray-600">{{ task.equipment_type }} {{ task.equipment_model or '' }}</p>
+                    <p class="text-sm text-gray-500 mt-1">{{ task.description[:100] }}...</p>
+                </div>
+                <div class="text-right">
+                    <span class="px-2 py-1 text-xs rounded-full
+                        {% if task.status == 'assigned' %}bg-yellow-100 text-yellow-800
+                        {% elif task.status == 'in_progress' %}bg-blue-100 text-blue-800
+                        {% elif task.status == 'waiting_for_part' %}bg-purple-100 text-purple-800
+                        {% endif %}">
+                        {{ task.status }}
+                    </span>
+                    <p class="text-xs text-gray-400 mt-2">Создана: {{ task.created_at.strftime('%d.%m.%Y') }}</p>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-center text-gray-500 py-8">Нет активных задач</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

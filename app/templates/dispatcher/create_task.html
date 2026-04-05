@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Новая задача{% endblock %}
+
+{% block menu %}
+    <span class="text-gray-600">Диспетчер: {{ user.name }}</span>
+    <a href="/dispatcher/dashboard" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm">
+        ← Назад
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow rounded-lg p-6 max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">Создание новой задачи</h1>
+
+    <form id="taskForm" onsubmit="createTask(event)">
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="client_id">
+                Клиент
+            </label>
+            <select id="client_id" required class="w-full border rounded px-3 py-2">
+                <option value="">Выберите клиента</option>
+                {% for client in clients %}
+                <option value="{{ client.id }}">{{ client.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="equipment_type">
+                Тип оборудования
+            </label>
+            <input type="text" id="equipment_type" required class="w-full border rounded px-3 py-2" placeholder="Принтер, МФУ, ноутбук...">
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="equipment_model">
+                Модель
+            </label>
+            <input type="text" id="equipment_model" class="w-full border rounded px-3 py-2" placeholder="HP LaserJet 1018">
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="serial_number">
+                Серийный номер
+            </label>
+            <input type="text" id="serial_number" class="w-full border rounded px-3 py-2">
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="description">
+                Описание проблемы
+            </label>
+            <textarea id="description" rows="4" required class="w-full border rounded px-3 py-2" placeholder="Опишите проблему..."></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2">
+            <a href="/dispatcher/dashboard" class="px-4 py-2 border rounded">Отмена</a>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                Создать задачу
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    async function createTask(event) {
+        event.preventDefault();
+
+        const taskData = {
+            client_id: parseInt(document.getElementById('client_id').value),
+            equipment_type: document.getElementById('equipment_type').value,
+            equipment_model: document.getElementById('equipment_model').value,
+            serial_number: document.getElementById('serial_number').value,
+            description: document.getElementById('description').value
+        };
+
+        try {
+            const response = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(taskData)
+            });
+
+            if (response.ok) {
+                alert('Задача создана');
+                window.location.href = '/dispatcher/dashboard';
+            } else {
+                const data = await response.json();
+                alert('Ошибка: ' + (data.detail || 'Неизвестная ошибка'));
+            }
+        } catch (error) {
+            alert('Ошибка соединения с сервером');
+        }
+    }
+</script>
+{% endblock %}
