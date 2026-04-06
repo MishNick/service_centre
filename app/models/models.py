@@ -62,7 +62,7 @@ class Task(Base):
     __tablename__ = "tasks"
 
     id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=True)  # теперь может быть NULL
     engineer_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     dispatcher_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     status = Column(Enum(TaskStatus), default=TaskStatus.NEW)
@@ -72,6 +72,13 @@ class Task(Base):
     serial_number = Column(String(100))
     created_at = Column(DateTime, default=datetime.utcnow)
     closed_at = Column(DateTime, nullable=True)
+
+    # НОВЫЕ ПОЛЯ
+    client_name = Column(String(200), nullable=True)  # Имя клиента (если новый)
+    client_phone = Column(String(20), nullable=True)  # Телефон клиента
+    client_address = Column(Text, nullable=True)  # Адрес проведения работ
+    scheduled_date = Column(DateTime, nullable=True)  # Желаемая дата приезда
+    completion_notes = Column(Text, nullable=True)  # Заметки инженера (уже было)
 
     # Связи
     client = relationship("Client", back_populates="tasks")

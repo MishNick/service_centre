@@ -28,23 +28,49 @@ for path in font_paths:
             print(f"⚠️ Не удалось загрузить шрифт {path}: {e}")
 
 
-def generate_act_pdf(task, client, engineer):
+def generate_act_pdf(task, client_data, engineer):
     """
     Генерирует PDF акта выполненных работ
+
+    client_data: словарь с ключами name, phone, address, company_name
     """
-    # Создаём папку для PDF
+    import os
+    from datetime import datetime
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+
+    # Регистрируем шрифт с поддержкой кириллицы
+    font_paths = [
+        "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/ariali.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+    ]
+
+    FONT_NAME = 'Helvetica'
+    for path in font_paths:
+        if os.path.exists(path):
+            try:
+                pdfmetrics.registerFont(TTFont('CustomFont', path))
+                FONT_NAME = 'CustomFont'
+                break
+            except:
+                pass
+
     os.makedirs('generated_acts', exist_ok=True)
 
-    # Имя файла
     pdf_filename = f"act_{task.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
     pdf_path = os.path.join('generated_acts', pdf_filename)
 
-    # Создаём документ
     doc = SimpleDocTemplate(pdf_path, pagesize=A4,
                             topMargin=20 * mm, bottomMargin=20 * mm,
                             leftMargin=20 * mm, rightMargin=20 * mm)
 
-    # Стили
     styles = getSampleStyleSheet()
 
     title_style = ParagraphStyle(
@@ -74,7 +100,6 @@ def generate_act_pdf(task, client, engineer):
         fontName=FONT_NAME
     )
 
-    # Собираем содержимое
     story = []
 
     # Заголовок
@@ -82,13 +107,11 @@ def generate_act_pdf(task, client, engineer):
     story.append(Paragraph(f"от {datetime.now().strftime('%d.%m.%Y')}", normal_style))
     story.append(Spacer(1, 20))
 
-    # Клиент
+    # Информация о клиенте (используем словарь client_data)
     story.append(Paragraph("Информация о клиенте:", heading_style))
-    story.append(Paragraph(f"<b>Название:</b> {client.name}", normal_style))
-    if client.phone:
-        story.append(Paragraph(f"<b>Телефон:</b> {client.phone}", normal_style))
-    if client.address:
-        story.append(Paragraph(f"<b>Адрес:</b> {client.address}", normal_style))
+    story.append(Paragraph(f"<b>Название:</b> {client_data['name']}", normal_style))
+    story.append(Paragraph(f"<b>Телефон:</b> {client_data['phone']}", normal_style))
+    story.append(Paragraph(f"<b>Адрес:</b> {client_data['address']}", normal_style))
     story.append(Spacer(1, 15))
 
     # Оборудование
@@ -104,6 +127,12 @@ def generate_act_pdf(task, client, engineer):
     story.append(Paragraph("Инженер:", heading_style))
     story.append(Paragraph(f"{engineer.name if engineer else 'Не назначен'}", normal_style))
     story.append(Spacer(1, 15))
+
+    # Желаемая дата приезда
+    if task.scheduled_date:
+        story.append(
+            Paragraph(f"<b>Желаемая дата приезда:</b> {task.scheduled_date.strftime('%d.%m.%Y %H:%M')}", normal_style))
+        story.append(Spacer(1, 15))
 
     # Описание работ
     story.append(Paragraph("Выполненные работы:", heading_style))
@@ -157,7 +186,6 @@ def generate_act_pdf(task, client, engineer):
                            ParagraphStyle('Footer', parent=styles['Normal'], fontSize=8, alignment=TA_CENTER,
                                           fontName=FONT_NAME)))
 
-    # Создаём PDF
     doc.build(story)
 
     print(f"✅ PDF создан: {pdf_path}")

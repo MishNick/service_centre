@@ -18,14 +18,34 @@ async def tasks_page(
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)
 ):
-    # Получаем задачи текущего инженера
     tasks = db.query(Task).filter(
         Task.engineer_id == current_user.id,
         Task.status != "completed"
-    ).all()
+    ).order_by(Task.created_at.desc()).all()
 
     return templates.TemplateResponse(
         "engineer/dashboard.html",
+        {
+            "request": request,
+            "tasks": tasks,
+            "user": current_user
+        }
+    )
+
+
+@router.get("/my-completed", response_class=HTMLResponse)
+async def my_completed_page(
+        request: Request,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    tasks = db.query(Task).filter(
+        Task.status == "completed",
+        Task.engineer_id == current_user.id
+    ).order_by(Task.closed_at.desc()).all()
+
+    return templates.TemplateResponse(
+        "engineer/my_completed.html",
         {
             "request": request,
             "tasks": tasks,
@@ -53,7 +73,6 @@ async def task_detail_page(
             status_code=404
         )
 
-    # Получаем заявки на запчасти по этой задаче
     part_requests = db.query(PartRequest).filter(PartRequest.task_id == task_id).all()
 
     return templates.TemplateResponse(

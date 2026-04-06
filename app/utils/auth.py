@@ -30,7 +30,7 @@ def set_token_cookie(response: Response, token: str):
     response.set_cookie(
         key="access_token",
         value=f"Bearer {token}",
-        httponly=True,  # Недоступно из JavaScript (безопаснее)
+        httponly=True,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path="/",

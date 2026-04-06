@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Просмотр задачи #{{ task.id }}{% endblock %}
+
+{% block menu %}
+    <span class="text-gray-600">Диспетчер: {{ user.name }}</span>
+    <a href="/dispatcher/archive" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm">
+        ← Назад в архив
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow rounded-lg p-6">
+    <div class="flex justify-between items-start mb-6">
+        <h1 class="text-2xl font-bold">Задача #{{ task.id }}</h1>
+        <span class="px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+            {{ task.status }}
+        </span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <h2 class="text-lg font-semibold mb-3">Информация о клиенте</h2>
+            <div class="bg-gray-50 p-4 rounded">
+                <p><span class="font-medium">Название:</span> {{ task.client.name }}</p>
+                <p><span class="font-medium">Телефон:</span> {{ task.client.phone or 'не указан' }}</p>
+                <p><span class="font-medium">Адрес:</span> {{ task.client.address or 'не указан' }}</p>
+            </div>
+        </div>
+
+        <div>
+            <h2 class="text-lg font-semibold mb-3">Оборудование</h2>
+            <div class="bg-gray-50 p-4 rounded">
+                <p><span class="font-medium">Тип:</span> {{ task.equipment_type }}</p>
+                <p><span class="font-medium">Модель:</span> {{ task.equipment_model or 'не указана' }}</p>
+                <p><span class="font-medium">Серийный номер:</span> {{ task.serial_number or 'не указан' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-6">
+        <h2 class="text-lg font-semibold mb-3">Описание проблемы</h2>
+        <div class="bg-gray-50 p-4 rounded">
+            <p>{{ task.description }}</p>
+        </div>
+    </div>
+
+    <div class="mt-6">
+        <h2 class="text-lg font-semibold mb-3">Информация о выполнении</h2>
+        <div class="bg-gray-50 p-4 rounded">
+            <p><span class="font-medium">Инженер:</span> {{ task.engineer.name if task.engineer else 'Не назначен' }}</p>
+            <p><span class="font-medium">Создана:</span> {{ task.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+            <p><span class="font-medium">Завершена:</span> {{ task.closed_at.strftime('%d.%m.%Y %H:%M') if task.closed_at else '-' }}</p>
+            {% if task.completion_notes %}
+            <p class="mt-3"><span class="font-medium">Заметки инженера:</span></p>
+            <p class="mt-1">{{ task.completion_notes }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mt-6 flex gap-3">
+        <a href="/api/tasks/{{ task.id }}/generate-act"
+           target="_blank"
+           class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+            📄 Сформировать акт
+        </a>
+        <button onclick="deleteTask({{ task.id }})"
+                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+            🗑️ Удалить задачу
+        </button>
+    </div>
+</div>
+
+<script>
+    function deleteTask(taskId) {
+        if (!confirm('Вы уверены, что хотите удалить эту задачу из архива?')) return;
+
+        fetch(`/api/tasks/${taskId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('Задача удалена');
+            window.location.href = '/dispatcher/archive';
+        })
+        .catch(error => {
+            alert('Ошибка при удалении');
+        });
+    }
+</script>
+{% endblock %}

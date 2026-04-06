@@ -23,18 +23,17 @@
         </span>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-            <h2 class="text-lg font-semibold mb-3">Информация о клиенте</h2>
-            <div class="bg-gray-50 p-4 rounded">
-                <p><span class="font-medium">Название:</span> {{ task.client.name }}</p>
-                {% if task.client.company_name %}
-                <p><span class="font-medium">Компания:</span> {{ task.client.company_name }}</p>
-                {% endif %}
-                <p><span class="font-medium">Телефон:</span> {{ task.client.phone or 'не указан' }}</p>
-                <p><span class="font-medium">Адрес:</span> {{ task.client.address or 'не указан' }}</p>
-            </div>
+    <div>
+        <h2 class="text-lg font-semibold mb-3">Информация о клиенте</h2>
+        <div class="bg-gray-50 p-4 rounded">
+            <p><span class="font-medium">Клиент:</span> {{ task.client_name or task.client.name }}</p>
+            <p><span class="font-medium">Телефон:</span> {{ task.client_phone or task.client.phone or 'не указан' }}</p>
+            <p><span class="font-medium">Адрес работ:</span> {{ task.client_address or task.client.address or 'не указан' }}</p>
+            {% if task.scheduled_date %}
+            <p><span class="font-medium">Желаемая дата приезда:</span> {{ task.scheduled_date.strftime('%d.%m.%Y %H:%M') }}</p>
+            {% endif %}
         </div>
+    </div>
 
         <div>
             <h2 class="text-lg font-semibold mb-3">Оборудование</h2>
@@ -164,11 +163,11 @@
             return response.json();
         })
         .then(data => {
-            alert('Статус обновлен!');
+            showToast('✅ Статус обновлен', 'success');
             window.location.reload();
         })
         .catch(error => {
-            alert('Ошибка: ' + error.message);
+            showToast('❌ Ошибка при обновлении статуса', 'error');
         });
     }
 

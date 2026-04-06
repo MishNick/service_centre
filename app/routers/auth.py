@@ -4,9 +4,9 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.models import User
-from app.schemas.users import PhoneLoginRequest, PhoneVerifyRequest, UserResponse
+from app.schemas.users import PhoneLoginRequest, PhoneVerifyRequest
 from app.utils.sms import generate_sms_code, verify_sms_code
-from app.utils.auth import create_access_token, set_token_cookie, get_token_from_cookie, clear_token_cookie
+from app.utils.auth import create_access_token, set_token_cookie, clear_token_cookie
 import logging
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -16,16 +16,7 @@ templates = Jinja2Templates(directory="app/templates")
 # Страница входа
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    # Проверяем, может уже есть токен
-    token = get_token_from_cookie(request)
-    if token:
-        from app.utils.auth import verify_token
-        payload = verify_token(token)
-        if payload:
-            # Если токен валидный, редиректим на соответствующий дашборд
-            # Но нам нужна роль, а её нет в payload, поэтому пока просто на главную
-            return RedirectResponse(url="/", status_code=302)
-
+    # Всегда показываем страницу входа
     return templates.TemplateResponse(
         "auth/login.html",
         {"request": request, "title": "Вход в систему"}
@@ -46,8 +37,8 @@ async def verify_page(request: Request, phone: str = None):
 # API: Запрос кода
 @router.post("/request-code")
 async def request_code(
-        request: PhoneLoginRequest,
-        db: Session = Depends(get_db)
+    request: PhoneLoginRequest,
+    db: Session = Depends(get_db)
 ):
     # Проверяем, есть ли пользователь с таким телефоном
     user = db.query(User).filter(User.phone == request.phone).first()
@@ -59,7 +50,8 @@ async def request_code(
         user = User(
             phone=request.phone,
             name="Тестовый пользователь",
-            role=UserRole.ENGINEER
+            role=UserRole.ENGINEER,
+            is_active=1
         )
         db.add(user)
         db.commit()
@@ -74,8 +66,8 @@ async def request_code(
 # API: Проверка кода
 @router.post("/verify-code")
 async def verify_code(
-        request: PhoneVerifyRequest,
-        db: Session = Depends(get_db)
+    request: PhoneVerifyRequest,
+    db: Session = Depends(get_db)
 ):
     # Проверяем код
     if not verify_sms_code(request.phone, request.code):
@@ -95,8 +87,19 @@ async def verify_code(
     # Создаем токен
     access_token = create_access_token(data={"sub": str(user.id)})
 
+    # Определяем URL редиректа в зависимости от роли
+    role = user.role.value
+    if role == "dispatcher":
+        redirect_url = "/dispatcher/dashboard"
+    elif role == "engineer":
+        redirect_url = "/engineer/dashboard"
+    elif role == "storekeeper":
+        redirect_url = "/storekeeper/requests"
+    else:
+        redirect_url = "/"
+
     # Создаем ответ и устанавливаем cookie
-    response = RedirectResponse(url=f"/{user.role.value}/dashboard", status_code=302)
+    response = RedirectResponse(url=redirect_url, status_code=302)
     set_token_cookie(response, access_token)
 
     return response
@@ -104,7 +107,7 @@ async def verify_code(
 
 # Выход
 @router.get("/logout")
-async def logout():
+async def logout(request: Request):
     response = RedirectResponse(url="/auth/login", status_code=302)
     clear_token_cookie(response)
     return response

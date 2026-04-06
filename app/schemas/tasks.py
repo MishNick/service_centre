@@ -86,3 +86,46 @@ class TaskStatusUpdate(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class TaskCreate(BaseModel):
+    # Старые поля (client_id стал optional)
+    client_id: Optional[int] = None
+
+    # Новые поля для ручного ввода клиента
+    client_name: Optional[str] = None
+    client_phone: Optional[str] = None
+    client_address: Optional[str] = None
+
+    # Основные поля задачи
+    equipment_type: str
+    equipment_model: Optional[str] = None
+    serial_number: Optional[str] = None
+    description: str
+
+    # Новая дата
+    scheduled_date: Optional[datetime] = None
+
+
+class TaskResponse(BaseModel):
+    id: int
+    client_id: Optional[int] = None
+    engineer_id: Optional[int] = None
+    dispatcher_id: int
+    status: TaskStatus
+    description: str
+    equipment_type: str
+    equipment_model: Optional[str] = None
+    serial_number: Optional[str] = None
+    created_at: datetime
+    closed_at: Optional[datetime] = None
+
+    # Новые поля
+    client_name: Optional[str] = None
+    client_phone: Optional[str] = None
+    client_address: Optional[str] = None
+    scheduled_date: Optional[datetime] = None
+    completion_notes: Optional[str] = None
+
+    class Config:
+        from_attributes = True

@@ -4,6 +4,12 @@
 
 {% block menu %}
     <span class="text-gray-600">Инженер: {{ user.name }}</span>
+    <a href="/engineer/dashboard" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm">
+        📋 Активные
+    </a>
+    <a href="/engineer/my-completed" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+        📦 Мои завершённые
+    </a>
 {% endblock %}
 
 {% block content %}
@@ -32,7 +38,7 @@
         <div class="border rounded p-4 hover:shadow transition cursor-pointer" onclick="window.location.href='/engineer/tasks/{{ task.id }}'">
             <div class="flex justify-between items-start">
                 <div>
-                    <h3 class="font-semibold">{{ task.client.name }}</h3>
+                    <h3 class="font-semibold">{{ task.client_name or task.client.name }}</h3>
                     <p class="text-sm text-gray-600">{{ task.equipment_type }} {{ task.equipment_model or '' }}</p>
                     <p class="text-sm text-gray-500 mt-1">{{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}</p>
                 </div>

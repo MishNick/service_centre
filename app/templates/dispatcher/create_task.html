@@ -14,23 +14,83 @@
     <h1 class="text-2xl font-bold mb-6">Создание новой задачи</h1>
 
     <form id="taskForm" onsubmit="createTask(event)">
+        <!-- Выбор типа клиента -->
         <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2" for="client_id">
-                Клиент
+            <label class="block text-gray-700 text-sm font-bold mb-2">
+                Тип клиента
             </label>
-            <select id="client_id" required class="w-full border rounded px-3 py-2">
-                <option value="">Выберите клиента</option>
-                {% for client in clients %}
-                <option value="{{ client.id }}">{{ client.name }}</option>
-                {% endfor %}
-            </select>
+            <div class="flex gap-4">
+                <label class="inline-flex items-center">
+                    <input type="radio" name="client_type" value="existing" checked onchange="toggleClientType()">
+                    <span class="ml-2">Выбрать из списка</span>
+                </label>
+                <label class="inline-flex items-center">
+                    <input type="radio" name="client_type" value="new" onchange="toggleClientType()">
+                    <span class="ml-2">Новый клиент</span>
+                </label>
+            </div>
         </div>
 
+        <!-- Блок: существующий клиент -->
+        <div id="existingClientBlock" class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="client_id">
+                Клиент <span class="text-red-500">*</span>
+            </label>
+            <select id="client_id" class="w-full border rounded px-3 py-2" onchange="validateForm()">
+                <option value="">Выберите клиента</option>
+                {% for client in clients %}
+                <option value="{{ client.id }}">{{ client.name }} ({{ client.phone or 'без телефона' }})</option>
+                {% endfor %}
+            </select>
+            <div class="text-red-500 text-xs mt-1 hidden" id="clientIdError">Выберите клиента</div>
+        </div>
+
+        <!-- Блок: новый клиент (скрыт по умолчанию) -->
+        <div id="newClientBlock" class="mb-4 hidden">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="client_name">
+                        ФИО / Название <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="client_name" class="w-full border rounded px-3 py-2" oninput="validateForm()">
+                    <div class="text-red-500 text-xs mt-1 hidden" id="clientNameError">Введите имя клиента</div>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="client_phone">
+                        Телефон
+                    </label>
+                    <input type="tel" id="client_phone" class="w-full border rounded px-3 py-2" placeholder="+7 (999) 123-45-67" oninput="validatePhone()">
+                    <div class="text-red-500 text-xs mt-1 hidden" id="clientPhoneError">Неверный формат телефона</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Адрес -->
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="client_address">
+                Адрес проведения работ <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="client_address" class="w-full border rounded px-3 py-2" oninput="validateForm()">
+            <div class="text-red-500 text-xs mt-1 hidden" id="addressError">Введите адрес</div>
+        </div>
+
+        <!-- Желаемая дата -->
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="scheduled_date">
+                Желаемая дата приезда
+            </label>
+            <input type="datetime-local" id="scheduled_date" class="w-full border rounded px-3 py-2">
+        </div>
+
+        <hr class="my-4">
+
+        <!-- Оборудование -->
         <div class="mb-4">
             <label class="block text-gray-700 text-sm font-bold mb-2" for="equipment_type">
-                Тип оборудования
+                Тип оборудования <span class="text-red-500">*</span>
             </label>
-            <input type="text" id="equipment_type" required class="w-full border rounded px-3 py-2" placeholder="Принтер, МФУ, ноутбук...">
+            <input type="text" id="equipment_type" class="w-full border rounded px-3 py-2" placeholder="Принтер, МФУ, ноутбук..." oninput="validateForm()">
+            <div class="text-red-500 text-xs mt-1 hidden" id="equipmentTypeError">Введите тип оборудования</div>
         </div>
 
         <div class="mb-4">
@@ -49,14 +109,15 @@
 
         <div class="mb-4">
             <label class="block text-gray-700 text-sm font-bold mb-2" for="description">
-                Описание проблемы
+                Описание проблемы <span class="text-red-500">*</span>
             </label>
-            <textarea id="description" rows="4" required class="w-full border rounded px-3 py-2" placeholder="Опишите проблему..."></textarea>
+            <textarea id="description" rows="4" class="w-full border rounded px-3 py-2" placeholder="Опишите проблему..." oninput="validateForm()"></textarea>
+            <div class="text-red-500 text-xs mt-1 hidden" id="descriptionError">Введите описание проблемы</div>
         </div>
 
         <div class="flex justify-end gap-2">
-            <a href="/dispatcher/dashboard" class="px-4 py-2 border rounded">Отмена</a>
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+            <a href="/dispatcher/dashboard" class="px-4 py-2 border rounded hover:bg-gray-100">Отмена</a>
+            <button type="submit" id="submitBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded opacity-50 cursor-not-allowed" disabled>
                 Создать задачу
             </button>
         </div>
@@ -64,16 +125,135 @@
 </div>
 
 <script>
+    function toggleClientType() {
+        const selectedType = document.querySelector('input[name="client_type"]:checked').value;
+        const existingBlock = document.getElementById('existingClientBlock');
+        const newBlock = document.getElementById('newClientBlock');
+
+        if (selectedType === 'existing') {
+            existingBlock.classList.remove('hidden');
+            newBlock.classList.add('hidden');
+        } else {
+            existingBlock.classList.add('hidden');
+            newBlock.classList.remove('hidden');
+        }
+        validateForm();
+    }
+
+    function validatePhone() {
+        const phone = document.getElementById('client_phone').value;
+        const phoneError = document.getElementById('clientPhoneError');
+        const phoneRegex = /^\+7\d{10}$/;
+
+        if (phone && !phoneRegex.test(phone)) {
+            phoneError.classList.remove('hidden');
+            return false;
+        } else {
+            phoneError.classList.add('hidden');
+            return true;
+        }
+    }
+
+    function validateForm() {
+        const clientType = document.querySelector('input[name="client_type"]:checked').value;
+        let isValid = true;
+
+        // Валидация в зависимости от типа клиента
+        if (clientType === 'existing') {
+            const clientId = document.getElementById('client_id').value;
+            const clientIdError = document.getElementById('clientIdError');
+            if (!clientId) {
+                clientIdError.classList.remove('hidden');
+                isValid = false;
+            } else {
+                clientIdError.classList.add('hidden');
+            }
+        } else {
+            const clientName = document.getElementById('client_name').value;
+            const clientNameError = document.getElementById('clientNameError');
+            if (!clientName.trim()) {
+                clientNameError.classList.remove('hidden');
+                isValid = false;
+            } else {
+                clientNameError.classList.add('hidden');
+            }
+
+            // Валидация телефона
+            if (!validatePhone()) isValid = false;
+        }
+
+        // Адрес
+        const address = document.getElementById('client_address').value;
+        const addressError = document.getElementById('addressError');
+        if (!address.trim()) {
+            addressError.classList.remove('hidden');
+            isValid = false;
+        } else {
+            addressError.classList.add('hidden');
+        }
+
+        // Тип оборудования
+        const equipmentType = document.getElementById('equipment_type').value;
+        const equipmentTypeError = document.getElementById('equipmentTypeError');
+        if (!equipmentType.trim()) {
+            equipmentTypeError.classList.remove('hidden');
+            isValid = false;
+        } else {
+            equipmentTypeError.classList.add('hidden');
+        }
+
+        // Описание
+        const description = document.getElementById('description').value;
+        const descriptionError = document.getElementById('descriptionError');
+        if (!description.trim()) {
+            descriptionError.classList.remove('hidden');
+            isValid = false;
+        } else {
+            descriptionError.classList.add('hidden');
+        }
+
+        // Активация/деактивация кнопки
+        const submitBtn = document.getElementById('submitBtn');
+        if (isValid) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        return isValid;
+    }
+
     async function createTask(event) {
         event.preventDefault();
 
-        const taskData = {
-            client_id: parseInt(document.getElementById('client_id').value),
+        if (!validateForm()) {
+            showToast('Заполните все обязательные поля', 'warning');
+            return;
+        }
+
+        const clientType = document.querySelector('input[name="client_type"]:checked').value;
+
+        let taskData = {
             equipment_type: document.getElementById('equipment_type').value,
             equipment_model: document.getElementById('equipment_model').value,
             serial_number: document.getElementById('serial_number').value,
-            description: document.getElementById('description').value
+            description: document.getElementById('description').value,
+            client_address: document.getElementById('client_address').value,
+            scheduled_date: document.getElementById('scheduled_date').value || null
         };
+
+        if (clientType === 'existing') {
+            taskData.client_id = parseInt(document.getElementById('client_id').value);
+        } else {
+            taskData.client_name = document.getElementById('client_name').value;
+            taskData.client_phone = document.getElementById('client_phone').value;
+        }
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Создание...';
 
         try {
             const response = await fetch('/api/tasks', {
@@ -85,15 +265,26 @@
             });
 
             if (response.ok) {
-                alert('Задача создана');
-                window.location.href = '/dispatcher/dashboard';
+                showToast('✅ Задача успешно создана!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/dispatcher/dashboard';
+                }, 1500);
             } else {
                 const data = await response.json();
-                alert('Ошибка: ' + (data.detail || 'Неизвестная ошибка'));
+                showToast('❌ Ошибка: ' + (data.detail || 'Неизвестная ошибка'), 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Создать задачу';
             }
         } catch (error) {
-            alert('Ошибка соединения с сервером');
+            showToast('❌ Ошибка соединения с сервером', 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Создать задачу';
         }
     }
+
+    // Инициализация валидации при загрузке
+    document.addEventListener('DOMContentLoaded', () => {
+        validateForm();
+    });
 </script>
 {% endblock %}

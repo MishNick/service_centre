@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Мои завершённые задачи{% endblock %}
+
+{% block menu %}
+    <span class="text-gray-600">Инженер: {{ user.name }}</span>
+    <a href="/engineer/dashboard" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm">
+        📋 Активные задачи
+    </a>
+    <a href="/engineer/my-completed" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+        📦 Мои завершённые
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow rounded-lg p-6">
+    <h1 class="text-2xl font-bold mb-6">Мои завершённые задачи</h1>
+
+    <div class="space-y-4">
+        {% for task in tasks %}
+        <div class="border rounded p-4 hover:shadow transition">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <div class="flex items-center gap-4 mb-2">
+                        <h3 class="font-semibold text-lg">Задача #{{ task.id }}</h3>
+                        <span class="text-sm text-gray-500">
+                            Завершена: {{ task.closed_at.strftime('%d.%m.%Y %H:%M') if task.closed_at else '-' }}
+                        </span>
+                    </div>
+                    <p class="text-gray-700"><span class="font-medium">Клиент:</span> {{ task.client.name }}</p>
+                    <p class="text-gray-700"><span class="font-medium">Оборудование:</span> {{ task.equipment_type }} {{ task.equipment_model or '' }}</p>
+                    <p class="text-gray-600 text-sm mt-2">{{ task.description[:150] }}{% if task.description|length > 150 %}...{% endif %}</p>
+
+                    {% if task.completion_notes %}
+                    <div class="mt-3 p-3 bg-gray-50 rounded">
+                        <p class="text-sm text-gray-600"><span class="font-medium">📝 Мои заметки:</span> {{ task.completion_notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="flex flex-col gap-2 ml-4">
+                    <button onclick="showNotesModal({{ task.id }}, '{{ task.completion_notes or '' }}')"
+                            class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm">
+                        📝 Заметки
+                    </button>
+                    <a href="/api/tasks/{{ task.id }}/generate-act"
+                       target="_blank"
+                       class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm text-center">
+                        📄 Акт
+                    </a>
+                    <button onclick="deleteTask({{ task.id }})"
+                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">
+                        🗑️ Удалить
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-center text-gray-500 py-8">Нет завершённых задач</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Модальное окно для заметок -->
+<div id="notesModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h3 class="text-lg font-semibold mb-4">Заметки к задаче</h3>
+        <form id="notesForm" onsubmit="saveNotes(event)">
+            <input type="hidden" id="notesTaskId">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Мои заметки</label>
+                <textarea id="notesContent" rows="5" class="w-full border rounded px-3 py-2" placeholder="Добавьте заметки о выполненной работе..."></textarea>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeNotesModal()" class="px-4 py-2 border rounded hover:bg-gray-100">Отмена</button>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let currentTaskId = null;
+
+    function showNotesModal(taskId, currentNotes) {
+        currentTaskId = taskId;
+        document.getElementById('notesTaskId').value = taskId;
+        document.getElementById('notesContent').value = currentNotes;
+        document.getElementById('notesModal').classList.remove('hidden');
+        document.getElementById('notesModal').classList.add('flex');
+    }
+
+    function closeNotesModal() {
+        document.getElementById('notesModal').classList.add('hidden');
+        document.getElementById('notesModal').classList.remove('flex');
+    }
+
+    function saveNotes(event) {
+        event.preventDefault();
+
+        const taskId = document.getElementById('notesTaskId').value;
+        const notes = document.getElementById('notesContent').value;
+
+        fetch(`/api/tasks/${taskId}/notes?notes=${encodeURIComponent(notes)}`, {
+            method: 'PATCH'
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('Заметки сохранены');
+            closeNotesModal();
+            location.reload();
+        })
+        .catch(error => {
+            alert('Ошибка при сохранении');
+        });
+    }
+
+    function deleteTask(taskId) {
+        if (!confirm('Вы уверены, что хотите удалить эту задачу из архива?')) return;
+
+        fetch(`/api/tasks/${taskId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('Задача удалена');
+            location.reload();
+        })
+        .catch(error => {
+            alert('Ошибка при удалении');
+        });
+    }
+</script>
+{% endblock %}

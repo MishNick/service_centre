@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Архив задач{% endblock %}
+
+{% block menu %}
+    <span class="text-gray-600">Диспетчер: {{ user.name }}</span>
+    <a href="/dispatcher/dashboard" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm">
+        📋 Активные задачи
+    </a>
+    <a href="/dispatcher/archive" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+        📦 Архив
+    </a>
+    <a href="/dispatcher/tasks/create" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
+        + Новая задача
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow rounded-lg p-6">
+    <h1 class="text-2xl font-bold mb-6">Архив завершённых задач</h1>
+
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white">
+            <thead>
+                <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+                    <th class="py-3 px-6 text-left">ID</th>
+                    <th class="py-3 px-6 text-left">Клиент</th>
+                    <th class="py-3 px-6 text-left">Оборудование</th>
+                    <th class="py-3 px-6 text-left">Инженер</th>
+                    <th class="py-3 px-6 text-left">Создана</th>
+                    <th class="py-3 px-6 text-left">Завершена</th>
+                    <th class="py-3 px-6 text-left">Действия</th>
+                </tr>
+            </thead>
+            <tbody class="text-gray-600 text-sm">
+                {% for task in tasks %}
+                <tr class="border-b border-gray-200 hover:bg-gray-50">
+                    <td class="py-3 px-6">#{{ task.id }}</td>
+                    <td class="py-3 px-6">{{ task.client.name }}</td>
+                    <td class="py-3 px-6">{{ task.equipment_type }} {{ task.equipment_model or '' }}</td>
+                    <td class="py-3 px-6">{{ task.engineer.name if task.engineer else 'Не назначен' }}</td>
+                    <td class="py-3 px-6">{{ task.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                    <td class="py-3 px-6">{{ task.closed_at.strftime('%d.%m.%Y %H:%M') if task.closed_at else '-' }}</td>
+                    <td class="py-3 px-6">
+                        <div class="flex gap-2">
+                            <a href="/dispatcher/tasks/{{ task.id }}/view"
+                               class="text-blue-600 hover:text-blue-800 text-sm">
+                                👁️ Просмотр
+                            </a>
+                            <a href="/api/tasks/{{ task.id }}/generate-act"
+                               target="_blank"
+                               class="text-green-600 hover:text-green-800 text-sm">
+                                📄 Акт
+                            </a>
+                            <button onclick="deleteTask({{ task.id }})"
+                                    class="text-red-600 hover:text-red-800 text-sm"
+                                    onclick="return confirm('Удалить задачу?')">
+                                🗑️ Удалить
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="py-8 text-center text-gray-500">Нет завершённых задач</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function deleteTask(taskId) {
+        if (!confirm('Вы уверены, что хотите удалить эту задачу из архива?')) return;
+
+        fetch(`/api/tasks/${taskId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('Задача удалена');
+            location.reload();
+        })
+        .catch(error => {
+            alert('Ошибка при удалении');
+        });
+    }
+</script>
+{% endblock %}
