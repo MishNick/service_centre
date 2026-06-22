@@ -110,26 +110,7 @@ copy .env.example .env
 python app.py
 ```
 
-или
 
-```bash
-flask run
-```
-
-## Скриншоты
-
-Скриншоты интерфейса можно добавить в папку:
-
-```text
-docs/screenshots/
-```
-
-Пример:
-
-```markdown
-![Главная страница](docs/screenshots/main_page.png)
-![Страница заявки](docs/screenshots/order_page.png)
-```
 
 ## Статус проекта
 
